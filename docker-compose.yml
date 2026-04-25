@@ -1,0 +1,131 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: incident_postgres
+    environment:
+      POSTGRES_USER: incident_user
+      POSTGRES_PASSWORD: incident_password
+      POSTGRES_DB: incident_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - incident_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U incident_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zookeeper (required by Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: incident_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_INIT_LIMIT: 5
+    ports:
+      - "2181:2181"
+    networks:
+      - incident_network
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "127.0.0.1", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: incident_kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    ports:
+      - "9092:9092"
+    networks:
+      - incident_network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "127.0.0.1:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Service
+  fastapi:
+    build:
+      context: ./backend
+      dockerfile: docker/fastapi.Dockerfile
+    container_name: incident_fastapi
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://incident_user:incident_password@postgres:5432/incident_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_LOGS_TOPIC: logs-topic
+      KAFKA_INCIDENTS_TOPIC: incidents-topic
+      KAFKA_CONSUMER_GROUP: incident-processor
+      LOG_LEVEL: INFO
+      DEBUG: 'false'
+      HOST: 0.0.0.0
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    networks:
+      - incident_network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Kafka Consumer Service
+  consumer:
+    build:
+      context: ./backend
+      dockerfile: docker/consumer.Dockerfile
+    container_name: incident_consumer
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://incident_user:incident_password@postgres:5432/incident_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_LOGS_TOPIC: logs-topic
+      KAFKA_INCIDENTS_TOPIC: incidents-topic
+      KAFKA_CONSUMER_GROUP: incident-processor
+      LOG_LEVEL: INFO
+      ENABLE_ANOMALY_DETECTION: 'true'
+      ENABLE_CLUSTERING: 'true'
+      ANOMALY_DETECTION_THRESHOLD: '2.0'
+      DEDUPLICATION_TIME_WINDOW: '300'
+    networks:
+      - incident_network
+    restart: on-failure
+
+volumes:
+  postgres_data:
+
+networks:
+  incident_network:
+    driver: bridge
