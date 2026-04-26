@@ -14,8 +14,8 @@ export const Dashboard: React.FC = () => {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [openIncidents, setOpenIncidents] = useState<Incident[]>([]);
 
-  const statsApi = useApi(() => api.getStatistics());
-  const incidentsApi = useApi(() => api.getOpenIncidents());
+  const statsApi = useApi(() => api.getStatistics(), { immediate: true });
+  const incidentsApi = useApi(() => api.getOpenIncidents(), { immediate: true });
 
   useEffect(() => {
     if (statsApi.data) setStatistics(statsApi.data);
@@ -29,6 +29,25 @@ export const Dashboard: React.FC = () => {
     statsApi.refetch();
     incidentsApi.refetch();
   };
+
+  // Show error if API is not available
+  if ((statsApi.error || incidentsApi.error) && !statsApi.loading && !incidentsApi.loading) {
+    return (
+      <div className="card" style={{ textAlign: "center", padding: "var(--spacing-2xl)" }}>
+        <h2>❌ Connection Error</h2>
+        <p>Unable to connect to the backend API at {process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1"}</p>
+        <p style={{ color: "var(--text-light)", marginTop: "var(--spacing-md)" }}>
+          Make sure the backend is running. Use Docker Compose:
+        </p>
+        <code style={{ display: "block", backgroundColor: "var(--bg-secondary)", padding: "var(--spacing-lg)", borderRadius: "var(--border-radius)", marginTop: "var(--spacing-lg)" }}>
+          docker-compose up -d
+        </code>
+        <button className="btn-primary mt-lg" onClick={handleRefresh}>
+          🔄 Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
