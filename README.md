@@ -11,6 +11,7 @@ This system provides:
 - **AI/ML Capabilities**: Anomaly detection and log clustering
 - **Incident Management**: Automatic incident creation, deduplication, and severity classification
 - **PostgreSQL Storage**: Persistent storage for logs and incidents
+- **React UI**: Modern web interface for viewing incidents and logs
 - **Docker Deployment**: Complete containerized setup with Docker Compose
 
 ## 📊 System Architecture

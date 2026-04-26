@@ -123,6 +123,28 @@ services:
       - incident_network
     restart: on-failure
 
+  # React UI Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: incident_frontend
+    depends_on:
+      - fastapi
+    environment:
+      REACT_APP_API_URL: http://fastapi:8000/api/v1
+    ports:
+      - "3000:3000"
+    networks:
+      - incident_network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   postgres_data:
 

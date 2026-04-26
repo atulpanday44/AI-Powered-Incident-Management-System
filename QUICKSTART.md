@@ -20,11 +20,22 @@ docker-compose ps
 # View logs
 docker-compose logs -f fastapi
 docker-compose logs -f consumer
+docker-compose logs -f frontend
 ```
 
-### 3. Health Check
+### 3. Access the System
+
+- **Web UI**: http://localhost:3000 (React Dashboard)
+- **API**: http://localhost:8000 (FastAPI)
+- **API Docs**: http://localhost:8000/docs (Swagger)
+
+### 4. Health Check
 
 ```bash
+# Frontend
+curl http://localhost:3000
+
+# API
 curl http://localhost:8000/health
 ```
 
@@ -39,7 +50,19 @@ Expected response:
 
 ## 📤 Test the System
 
-### Send a Log (Trigger Processing)
+### Using the Web UI (Recommended)
+
+1. Open http://localhost:3000 in your browser
+2. Navigate to "Ingest Log" from the sidebar
+3. Fill in the form:
+   - Service: `auth-service`
+   - Level: `ERROR`
+   - Message: `Database connection failed`
+4. Click "Send Log"
+5. Go to Dashboard to see real-time statistics
+6. Check Incidents tab to view created incidents
+
+### Using cURL (Alternative)
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/logs \
