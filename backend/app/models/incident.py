@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Float, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
 import uuid
 import enum
 from app.db.session import Base
@@ -28,7 +27,7 @@ class Log(Base):
     """Logs table for storing application logs."""
     __tablename__ = "logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     message = Column(String(2048), nullable=False, index=True)
     level = Column(String(20), nullable=False, index=True)
     service = Column(String(255), nullable=False, index=True)
@@ -43,7 +42,7 @@ class Incident(Base):
     """Incidents table for storing incident records."""
     __tablename__ = "incidents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String(255), nullable=False, index=True)
     service = Column(String(255), nullable=False, index=True)
     severity = Column(

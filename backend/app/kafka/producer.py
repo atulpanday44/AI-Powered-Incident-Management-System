@@ -17,6 +17,9 @@ class LogProducer:
 
     def __init__(self):
         """Initialize Kafka producer."""
+        self.producer = None
+        self.available = False
+        
         try:
             self.producer = KafkaProducer(
                 bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS.split(","),
@@ -24,7 +27,9 @@ class LogProducer:
                 acks="all",
                 retries=3,
                 max_in_flight_requests_per_connection=5,
+                request_timeout_ms=5000,  # 5 second timeout
             )
+            self.available = True
             logger.info(
                 "Kafka producer initialized",
                 extra={
@@ -33,8 +38,8 @@ class LogProducer:
                 }
             )
         except Exception as e:
-            logger.error(f"Failed to initialize Kafka producer: {str(e)}")
-            raise
+            logger.warning(f"Kafka not available - logs will not be published to Kafka: {str(e)}")
+            self.available = False
 
     def send_log(self, log_data: Dict[str, Any]) -> bool:
         """
@@ -46,6 +51,9 @@ class LogProducer:
         Returns:
             True if successful, False otherwise
         """
+        if not self.available or self.producer is None:
+            return False
+            
         try:
             future = self.producer.send(settings.KAFKA_LOGS_TOPIC, value=log_data)
             record_metadata = future.get(timeout=10)
@@ -62,13 +70,13 @@ class LogProducer:
             )
             return True
         except KafkaError as e:
-            logger.error(
+            logger.debug(
                 f"Failed to send log to Kafka: {str(e)}",
                 extra={"log_data": log_data}
             )
             return False
         except Exception as e:
-            logger.error(
+            logger.debug(
                 f"Unexpected error sending log to Kafka: {str(e)}",
                 extra={"log_data": log_data}
             )
@@ -76,7 +84,8 @@ class LogProducer:
 
     def close(self):
         """Close producer connection."""
-        self.producer.close()
+        if self.producer is not None:
+            self.producer.close()
 
 
 # Singleton instance

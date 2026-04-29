@@ -9,12 +9,20 @@ from app.core import get_settings
 settings = get_settings()
 
 # Create database engine
-engine = create_engine(
-    settings.DATABASE_URL,
-    echo=settings.SQLALCHEMY_ECHO,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
+# SQLite doesn't use connection pooling the same way, so skip pool config for SQLite
+if settings.DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        settings.DATABASE_URL,
+        echo=settings.SQLALCHEMY_ECHO,
+        connect_args={"check_same_thread": False},
+    )
+else:
+    engine = create_engine(
+        settings.DATABASE_URL,
+        echo=settings.SQLALCHEMY_ECHO,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+    )
 
 # Create session factory
 SessionLocal = sessionmaker(
