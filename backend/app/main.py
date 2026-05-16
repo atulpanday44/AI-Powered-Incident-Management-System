@@ -71,6 +71,15 @@ async def root():
     }
 
 
+@app.get("/health")
+async def health():
+    """Health check endpoint for Docker and uptime probes."""
+    return {
+        "status": "healthy",
+        "version": settings.APP_VERSION,
+    }
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Global exception handler."""

@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
     { id: "incidents", label: "Incidents", icon: "🚨" },
     { id: "logs", label: "Logs", icon: "📋" },
     { id: "ingest", label: "Ingest Log", icon: "➕" },
+    { id: "diagnostics", label: "Diagnostics", icon: "🔧" },
   ];
 
   return (

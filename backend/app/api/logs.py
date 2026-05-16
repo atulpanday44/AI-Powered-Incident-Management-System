@@ -43,11 +43,12 @@ async def ingest_logs(
     """
     try:
         # Prepare log data
+        timestamp = log_request.timestamp or datetime.utcnow()
         log_data = {
             "service": log_request.service,
             "level": log_request.level.value,
             "message": log_request.message,
-            "timestamp": log_request.timestamp or datetime.utcnow(),
+            "timestamp": timestamp,
         }
 
         # Store in database
@@ -60,6 +61,7 @@ async def ingest_logs(
 
         # Add UUID and ingestion time
         log_data["log_id"] = str(log.id)
+        log_data["timestamp"] = timestamp.isoformat()
         log_data["ingestion_time"] = datetime.utcnow().isoformat()
 
         # Publish to Kafka

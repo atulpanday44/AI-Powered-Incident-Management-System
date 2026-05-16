@@ -11,8 +11,9 @@ import { Dashboard } from "./pages/Dashboard";
 import { Incidents } from "./pages/Incidents";
 import { Logs } from "./pages/Logs";
 import { IngestLog } from "./pages/IngestLog";
+import { Diagnostics } from "./pages/Diagnostics";
 
-type PageType = "dashboard" | "incidents" | "logs" | "ingest";
+type PageType = "dashboard" | "incidents" | "logs" | "ingest" | "diagnostics";
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
@@ -56,6 +57,7 @@ function App() {
       incidents: "Incidents",
       logs: "Logs",
       ingest: "Ingest Log",
+      diagnostics: "Diagnostics",
     };
     return titles[page];
   };
@@ -70,6 +72,8 @@ function App() {
         return <Logs />;
       case "ingest":
         return <IngestLog />;
+      case "diagnostics":
+        return <Diagnostics />;
       default:
         return <Dashboard />;
     }
